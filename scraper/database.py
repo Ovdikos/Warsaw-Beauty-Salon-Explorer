@@ -3,10 +3,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from types import TracebackType
+from types import TracebackType
 
 
 @dataclass(slots=True, frozen=True)
@@ -30,16 +27,16 @@ class ServiceRecord:
 @dataclass(slots=True)
 class DatabaseManager:
     db_path: str = field(default="../data/salons.db")
-    _connection: sqlite3.Connection = field(init=False)
+    _connection: sqlite3.Connection = field(init=False, default=None)  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(self.db_path, check_same_thread=False)
         self._connection.row_factory = sqlite3.Row
         self._connection.executescript("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
-        self.setup_tables()
+        self._create_tables()
 
-    def setup_tables(self) -> None:
+    def _create_tables(self) -> None:
         self._connection.executescript("""
             CREATE TABLE IF NOT EXISTS Salons (
                 Id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,8 +47,7 @@ class DatabaseManager:
                 Website     TEXT,
                 PriceRange  TEXT,
                 Rating      REAL,
-                ReviewCount INTEGER,
-                ScrapedAt   DATETIME DEFAULT CURRENT_TIMESTAMP
+                ReviewCount INTEGER
             );
 
             CREATE TABLE IF NOT EXISTS Services (
@@ -65,11 +61,22 @@ class DatabaseManager:
         """)
         self._connection.commit()
 
+    def salon_exists(self, name: str) -> bool:
+        row = self._connection.execute(
+            "SELECT 1 FROM Salons WHERE Name = ? LIMIT 1", (name,)
+        ).fetchone()
+        return row is not None
+
+    def count_salons(self) -> int:
+        return self._connection.execute("SELECT COUNT(*) FROM Salons").fetchone()[0]
+
     def insert_salon(self, record: SalonRecord) -> int:
         cursor = self._connection.execute(
             """
-            INSERT INTO Salons (Name, Address, District, PhoneNumber, Website, PriceRange, Rating, ReviewCount)
-            VALUES (:name, :address, :district, :phone, :website, :price_range, :rating, :review_count)
+            INSERT INTO Salons
+                (Name, Address, District, PhoneNumber, Website, PriceRange, Rating, ReviewCount)
+            VALUES
+                (:name, :address, :district, :phone, :website, :price_range, :rating, :review_count)
             """,
             {
                 "name": record.name,
