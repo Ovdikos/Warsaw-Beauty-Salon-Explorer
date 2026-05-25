@@ -21,7 +21,7 @@ def _resolve_db_path() -> str:
     project_root = Path(__file__).resolve().parent.parent
     db_dir = project_root / "data"
     db_dir.mkdir(parents=True, exist_ok=True)
-    return str(db_dir / "salons_test_3.db")
+    return str(db_dir / "salons.db")
 
 
 async def main() -> None:

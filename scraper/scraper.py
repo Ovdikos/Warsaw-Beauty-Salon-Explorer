@@ -12,13 +12,14 @@ from database import DatabaseManager, SalonRecord, ServiceRecord
 
 log = logging.getLogger(__name__)
 
+# Constants logically grouped at the top
 LISTING_URL = "https://booksy.com/en-pl/s/salon-kosmetyczny/3_warszawa"
-TARGET_COUNT = 3
+TARGET_COUNT = 100
+MAX_CONCURRENT_PAGES = 5
 NAV_TIMEOUT = 45_000
 ELEMENT_TIMEOUT = 5_000
-CONCURRENCY = 5
 SALON_LINK_RE = re.compile(r"/en-pl/\d+_[^/#?]+")
-
+BLOCKED_RESOURCES = {"image", "media", "font"}
 WARSAW_DISTRICTS = {
     "Bemowo", "Białołęka", "Bielany", "Mokotów", "Ochota",
     "Praga-Południe", "Praga-Północ", "Rembertów", "Śródmieście",
@@ -28,7 +29,9 @@ WARSAW_DISTRICTS = {
 
 
 async def run(db_manager: DatabaseManager) -> None:
-
+    """Initialize Playwright and coordinate the scraping process."""
+    if db_manager.count_salons() >= TARGET_COUNT:
+        return
 
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(
@@ -52,16 +55,17 @@ async def run(db_manager: DatabaseManager) -> None:
         salon_urls = await collect_salon_urls(context)
         log.info("Collected %d unique salon URLs to process.", len(salon_urls))
 
-        semaphore = asyncio.Semaphore(CONCURRENCY)
+        # Limit concurrency to 5 to avoid overwhelming the system
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_PAGES)
         saved_count = db_manager.count_salons()
 
-        for i in range(0, len(salon_urls), CONCURRENCY):
+        for i in range(0, len(salon_urls), MAX_CONCURRENT_PAGES):
             if saved_count >= TARGET_COUNT:
                 break
-            batch = salon_urls[i : i + CONCURRENCY]
+            batch = salon_urls[i : i + MAX_CONCURRENT_PAGES]
             tasks = [
-                asyncio.create_task(scrape_and_save_salon(context, url, db_manager, semaphore, i + idx + 1))
-                for idx, url in enumerate(batch)
+                asyncio.create_task(scrape_and_save_salon(context, url, db_manager, semaphore))
+                for url in batch
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for result in results:
@@ -75,8 +79,10 @@ async def run(db_manager: DatabaseManager) -> None:
 
 
 async def collect_salon_urls(context: BrowserContext) -> list[str]:
+    """Iterate through the paginated listing URL to gather salon detail links."""
     seen: dict[str, None] = {}
     page = await context.new_page()
+    await block_unnecessary_resources(page)
 
     page_num = 1
     consecutive_empty = 0
@@ -137,20 +143,17 @@ async def scrape_and_save_salon(
     url: str,
     db_manager: DatabaseManager,
     semaphore: asyncio.Semaphore,
-    index: int = 1,
 ) -> bool:
+    """Extract individual salon details and save them to the database."""
     async with semaphore:
         page = await context.new_page()
+        await block_unnecessary_resources(page)
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
             await page.locator("h1").first.wait_for(timeout=NAV_TIMEOUT)
 
             await page.mouse.wheel(0, 800)
             await page.wait_for_timeout(1500)
-            try:
-                await page.wait_for_selector('div[data-testid="business-contact-info"]', timeout=10000)
-            except Exception:
-                pass
 
             html = await page.content()
             schema = parse_json_ld(html)
@@ -180,30 +183,14 @@ async def scrape_and_save_salon(
             rating = aggregate.get("ratingValue")
             review_count = aggregate.get("reviewCount")
 
-            await page.screenshot(path=f"../debug_screenshot_{index}.png", full_page=True)
-            phone = schema.get("telephone")
-            if not phone:
-                try:
-                    phone_loc = page.get_by_test_id("business-contact-info-phone")
-                    await phone_loc.wait_for(state="visible", timeout=5000)
-                    raw_phone = await phone_loc.inner_text()
-                    phone = " ".join(raw_phone.split())
-                except Exception:
-                    phone_match = re.search(r'"phone(?:Number)?"\s*:\s*"([^"]+)"', html)
-                    if phone_match:
-                        phone = " ".join(phone_match.group(1).split())
-                    else:
-                        phone = None
-
             website = await extract_website(schema, page)
-            services = extract_services(schema)
+            services = await extract_services(schema, page)
             price_range = derive_price_range(services)
 
             record = SalonRecord(
                 name=name,
                 address=full_address,
                 district=district,
-                phone=phone,
                 website=website,
                 price_range=price_range,
                 rating=float(rating) if rating is not None else None,
@@ -222,7 +209,20 @@ async def scrape_and_save_salon(
             await page.close()
 
 
+async def block_unnecessary_resources(page: Page) -> None:
+    """Abort requests for media and styling assets to minimize payload."""
+    async def handle_route(route: Route) -> None:
+        # Block images and fonts to speed up the scraper
+        if route.request.resource_type in BLOCKED_RESOURCES:
+            await route.abort()
+        else:
+            await route.continue_()
+
+    await page.route("**/*", handle_route)
+
+
 def parse_json_ld(html: str) -> dict[str, Any] | None:
+    """Extract and parse the JSON-LD schema from the raw HTML content."""
     blocks = re.findall(
         r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
         html,
@@ -240,7 +240,23 @@ def parse_json_ld(html: str) -> dict[str, Any] | None:
     return None
 
 
-def extract_services(schema: dict[str, Any]) -> list[ServiceRecord]:
+def _find_services_in_nuxt(data: Any, services: list[ServiceRecord]) -> None:
+    """Recursively traverse the Nuxt dictionary state to find service records."""
+    if isinstance(data, dict):
+        name = data.get("name")
+        price = data.get("price")
+        if isinstance(name, str) and isinstance(price, (int, float)):
+            if len(name) > 3 and price > 0:
+                services.append(ServiceRecord(name=name.strip(), price=float(price)))
+        for value in data.values():
+            _find_services_in_nuxt(value, services)
+    elif isinstance(data, list):
+        for item in data:
+            _find_services_in_nuxt(item, services)
+
+
+async def extract_services(schema: dict[str, Any], page: Page) -> list[ServiceRecord]:
+    """Extract salon services from JSON-LD or fallback to the injected Nuxt state."""
     services = []
     for offer in schema.get("makesOffer", []):
         if not isinstance(offer, dict) or offer.get("@type") != "Offer":
@@ -252,10 +268,21 @@ def extract_services(schema: dict[str, Any]) -> list[ServiceRecord]:
                 services.append(ServiceRecord(name=name, price=float(price)))
             except (ValueError, TypeError):
                 continue
+
+    if not services:
+        try:
+            # Extract Nuxt state directly via JS evaluation for stability
+            nuxt_state = await page.evaluate("() => window.__NUXT__")
+            if nuxt_state:
+                _find_services_in_nuxt(nuxt_state, services)
+        except Exception:
+            pass
+
     return services
 
 
 async def extract_website(schema: dict[str, Any], page: Page) -> str | None:
+    """Extract the salon's primary website or social media URL."""
     for item in schema.get("sameAs", []):
         if isinstance(item, str) and not any(
             domain in item.lower()
@@ -273,6 +300,7 @@ async def extract_website(schema: dict[str, Any], page: Page) -> str | None:
 
 
 def infer_district(address: str) -> str:
+    """Identify the Warsaw district based on the address string."""
     postal_re = re.compile(r"^\d{2}-\d{3}$")
     numeric_re = re.compile(r"^\d+$")
     noise = {"warsaw", "warszawa", "poland", "polska", "mazowieckie"}
@@ -297,6 +325,7 @@ def infer_district(address: str) -> str:
 
 
 def derive_price_range(services: list[ServiceRecord]) -> str | None:
+    """Calculate the overall price range string based on average service price."""
     prices = [s.price for s in services if s.price > 0]
     if not prices:
         return None
@@ -309,6 +338,7 @@ def derive_price_range(services: list[ServiceRecord]) -> str | None:
 
 
 async def dismiss_cookie_banner(page: Page) -> None:
+    """Attempt to clear common cookie consent banners from the UI."""
     selectors = [
         "#onetrust-accept-btn-handler",
         "button[id*='accept']",
