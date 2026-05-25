@@ -9,7 +9,7 @@ The application is built as a modular monolith, separated into three distinct co
 * **Data Collection:** Python 3 + Playwright (`asyncio`)
   * *Why:* Booksy is a heavily dynamic Single Page Application (SPA). Instead of trying to reverse-engineer undocumented and heavily protected private APIs, I chose Playwright to render the page and extract the embedded `application/ld+json` schema. Python's robust scraping ecosystem made this rapid to develop.
 * **Database:** SQLite
-  * *Why:* While PostgreSQL is my go-to for production applications, the assignment highly values the ability for reviewers to run the project from scratch. SQLite eliminates the need to configure Docker containers or local database servers. It "just works" out of the box using a shared `.db` file between the Python scraper and the .NET backend.
+  * *Why:* While MS SQL Server is my go-to for larger enterprise applications, the assignment highly values the ability for reviewers to run the project from scratch. SQLite eliminates the need to configure Docker containers or local database servers. It "just works" out of the box using a shared `.db` file between the Python scraper and the .NET backend.
 * **Backend API:** .NET 8 (C#) & Entity Framework Core
   * *Why:* C# and ASP.NET Core provide a robust, strictly typed environment for building REST APIs. It ensures data integrity and allows for clean, readable code structure (Controllers, DTOs, Models) without unnecessary boilerplate.
 * **Frontend UI:** React (TypeScript + Vite + TailwindCSS)
@@ -24,13 +24,26 @@ Collecting high-quality data on local services was the most challenging and inte
 ### Targeting
 Initially, I considered iterating over multiple service categories (hair, nails, massage). However, I realized the single category `salon-kosmetyczny` (beauty salon) in Warsaw alone contains over 3,600 businesses. To optimize the process, I pivoted to a pagination-based approach on a single category, appending `?businessesPage={page}` to gather URLs.
 
-### Data Extraction
+### Data Extraction & Fallbacks
 * **JSON-LD Schema:** The primary source of truth is the hidden SEO schema (`application/ld+json`). It provides clean, structured data for the salon's name, address, services, and ratings, making the scraper highly resilient to UI/CSS changes.
-* **DOM Inspection:** Phone numbers were often omitted from the JSON-LD schema. To fulfill the "nice to have" requirement, I implemented targeted DOM extraction using Playwright's specific test IDs (e.g., `data-testid="business-contact-info-phone"`) from the visual sidebar.
+* **The `__NUXT__` State Fallback:** When the JSON-LD schema occasionally omitted the list of services, relying on visual DOM parsing proved brittle. Instead, I utilized Playwright's native JS evaluation to extract the `window.__NUXT__` state, extracting the raw data exactly as the frontend framework sees it.
+
+### Product Decision: The Phone Number Trade-off
+During development, I discovered that Booksy actively hides salon phone numbers behind an authentication wall to retain users within their ecosystem. While it is technically possible to bypass this by utilizing Playwright's `storageState` with a dummy account, I made a conscious product decision to **drop this field**. 
+* **Reasoning:** Implementing forced authentication would completely break the project's "run from scratch" requirement for users of this app. Maybe I will find a better way to do this in the future, but for now I have no time :)
 
 ### Performance & Fault Tolerance
 A naive scraper would take hours and crash easily. I implemented three critical optimizations:
+1. **Surgical Network Interception:** Playwright is configured to aggressively drop heavy requests (images, fonts, media) while allowing scripts and XHR through, making the page load incredibly fast without breaking the SPA.
+2. **Controlled Concurrency:** Using `asyncio.Semaphore`, detail pages are fetched in controlled concurrent batches (5 at a time) to speed up extraction without overwhelming the target server.
+3. **Idempotency (Resume Capability):** The script checks the SQLite database before processing a URL. If the execution is interrupted, it can be restarted and will safely skip already-saved salons, preventing duplicates.
 
-1. **Network Interception:** Playwright is configured to aggressively drop all requests for images, fonts, and stylesheets, downloading only the raw HTML.
-2. **Concurrency:** Using `asyncio`, detail pages are fetched in concurrent batches rather than sequentially.
-3. **Idempotency (Resume Capability):** The script checks the SQLite database before processing a URL. If the execution is interrupted, it can be restarted and will safely skip already-saved salons.
+---
+
+## 3. Backend API Architecture
+
+The backend is built with **.NET 8** and **Entity Framework (EF) Core**, focusing on clean code and maintainability without over-engineering.
+
+* **Direct Context Injection:** For a project of this scale, implementing complex abstractions like the Repository pattern or Unit of Work would be an anti-pattern (over-engineering). Instead, I injected the `AppDbContext` directly into the `SalonsController`. This keeps the data flow straightforward and highly readable.
+* **Data Transfer Objects (DTOs):** To prevent over-posting vulnerabilities and keep the API payloads lightweight, I strictly separated database models from API responses using DTOs (`SalonListDto`, `SalonDetailDto`, `SalonUpdateDto`). 
+* **Database Mapping:** Since the SQLite database is generated dynamically by the Python scraper, EF Core is carefully mapped using Data Annotations (`[Table]`, `[Column]`) to bridge the naming convention gap between Python's typical style and C#'s PascalCase.
