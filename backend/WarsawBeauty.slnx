@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="WarsawBeauty.API/WarsawBeauty.API.csproj" />
+  <Project Path="WarsawBeauty.Application/WarsawBeauty.Application.csproj" />
+  <Project Path="WarsawBeauty.Core/WarsawBeauty.Core.csproj" />
+  <Project Path="WarsawBeauty.Infrastructure/WarsawBeauty.Infrastructure.csproj" />
+</Solution>
