@@ -4,14 +4,14 @@ This document outlines the technical decisions, architectural trade-offs, and da
 
 ## 1. Architectural Overview & Tech Stack
 
-The application is built as a modular monolith, separated into three distinct components to clearly divide responsibilities: data collection, data serving, and data presentation.
+The application is built as a modular monolith, separated into distinct components to clearly divide responsibilities: data collection, data serving, and data presentation.
 
 * **Data Collection:** Python 3 + Playwright (`asyncio`)
   * *Why:* Booksy is a heavily dynamic Single Page Application (SPA). Instead of trying to reverse-engineer undocumented and heavily protected private APIs, I chose Playwright to render the page and extract the embedded `application/ld+json` schema. Python's robust scraping ecosystem made this rapid to develop.
 * **Database:** SQLite
   * *Why:* While MS SQL Server is my go-to for larger enterprise applications, the assignment highly values the ability for reviewers to run the project from scratch. SQLite eliminates the need to configure Docker containers or local database servers. It "just works" out of the box using a shared `.db` file between the Python scraper and the .NET backend.
 * **Backend API:** .NET 8 (C#) & Entity Framework Core
-  * *Why:* C# and ASP.NET Core provide a robust, strictly typed environment for building REST APIs. It ensures data integrity and allows for clean, readable code structure (Controllers, DTOs, Models) without unnecessary boilerplate.
+  * *Why:* C# and ASP.NET Core provide a robust, strictly typed environment. To demonstrate enterprise-readiness, the backend is structured using **Clean Architecture** principles, ensuring high testability and clear separation of concerns.
 * **Frontend UI:** React (TypeScript + Vite + TailwindCSS)
   * *Why:* React allows for building a simple, responsive, and component-driven UI quickly. TypeScript ensures that the data structures consumed from the .NET backend match the frontend expectations perfectly.
 
@@ -40,10 +40,19 @@ A naive scraper would take hours and crash easily. I implemented three critical 
 
 ---
 
-## 3. Backend API Architecture
+## 3. Backend API Architecture (Clean Architecture)
 
-The backend is built with **.NET 8** and **Entity Framework (EF) Core**, focusing on clean code and maintainability without over-engineering.
+To demonstrate scalable, enterprise-grade .NET development, I refactored the backend into a **Clean Architecture** structure. This separates the domain logic from the framework-specific implementations.
 
-* **Direct Context Injection:** For a project of this scale, implementing complex abstractions like the Repository pattern or Unit of Work would be an anti-pattern (over-engineering). Instead, I injected the `AppDbContext` directly into the `SalonsController`. This keeps the data flow straightforward and highly readable.
-* **Data Transfer Objects (DTOs):** To prevent over-posting vulnerabilities and keep the API payloads lightweight, I strictly separated database models from API responses using DTOs (`SalonListDto`, `SalonDetailDto`, `SalonUpdateDto`). 
-* **Database Mapping:** Since the SQLite database is generated dynamically by the Python scraper, EF Core is carefully mapped using Data Annotations (`[Table]`, `[Column]`) to bridge the naming convention gap between Python's typical style and C#'s PascalCase.
+### Phase 1: The Core Layer (`WarsawBeauty.Core`)
+This is the heart of the application. It contains zero dependencies on external frameworks (not even EF Core) and holds the Enterprise Entities and Repository Interfaces (`ISalonRepository`).
+
+* **Explicit Schema Mapping:** The SQLite database is generated dynamically by an external Python scraper. To ensure bulletproof compatibility and prevent EF Core from relying on implicit "magic" conventions, I utilized strict Data Annotations (`[Table("salons")]`, `[Column("PriceRange")]`). This explicit mapping creates a rigid contract between the C# domain models and the physical database schema, eliminating runtime binding errors and making the data structure crystal clear to other developers.
+* **Strict Entity Modeling:** Because the `PhoneNumber` was dropped during data collection, it was explicitly removed from the Domain Entities to prevent EF Core from throwing binding exceptions during database queries.
+
+### Phase 2: The Infrastructure Layer (`WarsawBeauty.Infrastructure`)
+This layer handles all Data Access implementations and depends on the Core layer.
+
+* **Repository Pattern:** Instead of injecting `AppDbContext` directly into controllers, I implemented the Repository Pattern. This encapsulates the LINQ queries, decouples the database logic from the business logic, and makes the system highly unit-testable via Dependency Injection.
+* **Query Optimization (Eager Loading):** To prevent the dreaded **N+1 query problem**, the `GetSalonByIdAsync` repository method uses explicit Eager Loading (`.Include(s => s.Services)`). This ensures the salon and its nested services are fetched in a single, optimized database roundtrip.
+* **Environment-Agnostic Context:** Rather than hardcoding the SQLite connection string inside the `AppDbContext`, it is configured to accept `DbContextOptions` via Dependency Injection. The actual path is securely managed in `appsettings.json` and injected at runtime by the API layer.
