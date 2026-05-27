@@ -69,3 +69,14 @@ The entry point of the application is intentionally kept as "thin" as possible.
 
 * **Thin Controllers:** The `SalonsController` injects *only* `IMediator`. It simply receives HTTP requests, dispatches them as MediatR messages, and returns the appropriate HTTP status codes based on the result.
 * **Global Exception Handling:** Rather than cluttering controllers with repetitive `try-catch` blocks, I implemented a centralized `.NET 8 IExceptionHandler`. This catches unhandled exceptions (like `KeyNotFoundException` or `ValidationException`) and wraps them into standardized, secure `ProblemDetails` JSON responses. This prevents stack traces from leaking to the frontend while providing consistent, easily parsable error messages for the React client.
+
+---
+
+## 4. Frontend
+
+### Phase 1: The Frontend Client (React + TypeScript)
+To ensure complete type safety across the network boundary, the frontend is built with strict TypeScript interfaces that perfectly mirror the .NET API contracts.
+
+* **Strict Contract Mapping:** While the C# backend uses `PascalCase`, the JSON payload is naturally serialized to `camelCase`. The TypeScript interfaces (`SalonDetailDto`, `ServiceDto`, etc.) are explicitly typed to match this serialization, preventing runtime undefined errors.
+* **Modern Tooling:** The UI is built on the bleeding-edge React 19 and Vite. Styling is handled via Tailwind CSS v4, utilizing its zero-config approach for an optimal and highly performant developer experience.
+* **API Isolation:** Network requests are decoupled from React components using a dedicated Axios client service. This allows for global error handling (intercepting 400/500 responses) and seamless integration with the backend's ProblemDetails standard.
