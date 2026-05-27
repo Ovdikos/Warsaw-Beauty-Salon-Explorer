@@ -72,11 +72,17 @@ The entry point of the application is intentionally kept as "thin" as possible.
 
 ---
 
-## 4. Frontend
+## 4. Frontend Architecture
 
 ### Phase 1: The Frontend Client (React + TypeScript)
 To ensure complete type safety across the network boundary, the frontend is built with strict TypeScript interfaces that perfectly mirror the .NET API contracts.
 
 * **Strict Contract Mapping:** While the C# backend uses `PascalCase`, the JSON payload is naturally serialized to `camelCase`. The TypeScript interfaces (`SalonDetailDto`, `ServiceDto`, etc.) are explicitly typed to match this serialization, preventing runtime undefined errors.
 * **Modern Tooling:** The UI is built on the bleeding-edge React 19 and Vite. Styling is handled via Tailwind CSS v4, utilizing its zero-config approach for an optimal and highly performant developer experience.
-* **API Isolation:** Network requests are decoupled from React components using a dedicated Axios client service. This allows for global error handling (intercepting 400/500 responses) and seamless integration with the backend's ProblemDetails standard.
+
+### Phase 2: API Client & Service Layer
+To maintain a clean frontend architecture, React components are strictly separated from network and data-fetching logic.
+
+* **Centralized Axios Configuration:** All HTTP communication routes through a customized Axios instance (`apiClient.ts`). This prevents repetitive URL hardcoding and centralizes header management.
+* **Global Interceptors & RFC 7807:** The Axios client includes a global response interceptor designed to catch `400 Bad Request` and `500 Internal Server Error` responses. It automatically parses the standardized `ProblemDetails` JSON returned by the .NET `GlobalExceptionHandler`. This ensures that raw backend errors are seamlessly transformed into user-friendly UI notifications without crashing the application.
+* **Domain-Specific Services:** React components never execute raw `axios.get()` or `fetch()` calls. Instead, they interact with a dedicated `salonService`. This service exposes semantic, strongly-typed methods (e.g., `getSalons()`, `updateSalon()`), adhering to the Single Responsibility Principle (SRP) and making the UI components incredibly clean and easy to test.
