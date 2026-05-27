@@ -56,3 +56,16 @@ This layer handles all Data Access implementations and depends on the Core layer
 * **Repository Pattern:** Instead of injecting `AppDbContext` directly into controllers, I implemented the Repository Pattern. This encapsulates the LINQ queries, decouples the database logic from the business logic, and makes the system highly unit-testable via Dependency Injection.
 * **Query Optimization (Eager Loading):** To prevent the dreaded **N+1 query problem**, the `GetSalonByIdAsync` repository method uses explicit Eager Loading (`.Include(s => s.Services)`). This ensures the salon and its nested services are fetched in a single, optimized database roundtrip.
 * **Environment-Agnostic Context:** Rather than hardcoding the SQLite connection string inside the `AppDbContext`, it is configured to accept `DbContextOptions` via Dependency Injection. The actual path is securely managed in `appsettings.json` and injected at runtime by the API layer.
+
+### Phase 3: The Application Layer (`WarsawBeauty.Application`)
+This layer orchestrates the business use cases, utilizing the **CQRS (Command Query Responsibility Segregation)** pattern via **MediatR**.
+
+* **CQRS Implementation:** Read operations (Queries) and write operations (Commands) are strictly segregated into distinct Handlers. This ensures the Single Responsibility Principle (SRP) and keeps complex business logic completely out of the controllers.
+* **Fail-Fast Validation:** I implemented **FluentValidation** paired with a custom **MediatR Pipeline Behavior**. This acts as a robust gateway: any invalid request (e.g., an empty address or malformed URL) is immediately intercepted and rejected before it ever reaches the Handler or the Database.
+* **AutoMapper:** To prevent manual, error-prone object mapping, AutoMapper is utilized to elegantly transform Domain Entities into Data Transfer Objects (DTOs), ensuring no domain logic or navigation properties leak to the client.
+
+### Phase 4: The API (Presentation) Layer (`WarsawBeauty.API`)
+The entry point of the application is intentionally kept as "thin" as possible.
+
+* **Thin Controllers:** The `SalonsController` injects *only* `IMediator`. It simply receives HTTP requests, dispatches them as MediatR messages, and returns the appropriate HTTP status codes based on the result.
+* **Global Exception Handling:** Rather than cluttering controllers with repetitive `try-catch` blocks, I implemented a centralized `.NET 8 IExceptionHandler`. This catches unhandled exceptions (like `KeyNotFoundException` or `ValidationException`) and wraps them into standardized, secure `ProblemDetails` JSON responses. This prevents stack traces from leaking to the frontend while providing consistent, easily parsable error messages for the React client.
