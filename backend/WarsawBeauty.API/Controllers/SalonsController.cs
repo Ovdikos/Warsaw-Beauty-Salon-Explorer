@@ -1,6 +1,8 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using WarsawBeauty.API.DTOs;
-using WarsawBeauty.API.Repositories;
+using WarsawBeauty.Application.DTOs;
+using WarsawBeauty.Application.Features.Salons.Commands;
+using WarsawBeauty.Application.Features.Salons.Queries;
 
 namespace WarsawBeauty.API.Controllers;
 
@@ -8,79 +10,34 @@ namespace WarsawBeauty.API.Controllers;
 [Route("api/salons")]
 public class SalonsController : ControllerBase
 {
-    private readonly ISalonRepository _repository;
+    private readonly IMediator _mediator;
 
-    public SalonsController(ISalonRepository repository)
+    public SalonsController(IMediator mediator)
     {
-        _repository = repository;
+        _mediator = mediator;
     }
 
+    /// <summary>Returns all salons, with an optional district filter.</summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<SalonListDto>>> GetSalons([FromQuery] string? district)
     {
-        var salons = await _repository.GetSalonsAsync(district);
-
-        // Map the entities to a collection of SalonListDto
-        var dtos = salons.Select(s => new SalonListDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            District = s.District,
-            Rating = s.Rating,
-            PriceRange = s.PriceRange
-        });
-
-        return Ok(dtos);
+        var result = await _mediator.Send(new GetSalonsQuery(district));
+        return Ok(result);
     }
 
+    /// <summary>Returns the full profile of a single salon including its services.</summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<SalonDetailDto>> GetSalonById(int id)
     {
-        // The repository uses Eager Loading (.Include(s => s.Services))
-        var salon = await _repository.GetSalonByIdAsync(id);
-
-        if (salon == null)
-        {
-            return NotFound();
-        }
-
-        var dto = new SalonDetailDto
-        {
-            Id = salon.Id,
-            Name = salon.Name,
-            Address = salon.Address,
-            District = salon.District,
-            Website = salon.Website,
-            PriceRange = salon.PriceRange,
-            Rating = salon.Rating,
-            ReviewCount = salon.ReviewCount,
-            Services = salon.Services.Select(svc => new ServiceDto
-            {
-                Id = svc.Id,
-                Name = svc.Name,
-                Price = svc.Price
-            }).ToList()
-        };
-
-        return Ok(dto);
+        var result = await _mediator.Send(new GetSalonByIdQuery(id));
+        return result is null ? NotFound() : Ok(result);
     }
 
+    /// <summary>Updates the editable fields (Address and Website) of an existing salon.</summary>
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateSalon(int id, [FromBody] SalonUpdateDto updateDto)
+    public async Task<IActionResult> UpdateSalon(int id, [FromBody] SalonUpdateDto dto)
     {
-        var salon = await _repository.GetSalonByIdAsync(id);
-
-        if (salon == null)
-        {
-            return NotFound();
-        }
-
-        // Update only the allowed editable fields
-        salon.Address = updateDto.Address;
-        salon.Website = updateDto.Website;
-
-        await _repository.UpdateSalonAsync(salon);
-
+        await _mediator.Send(new UpdateSalonCommand(id, dto));
         return NoContent();
     }
 }
