@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using WarsawBeauty.Application.Behaviors;
 using WarsawBeauty.Application.Mappings;
 
 namespace WarsawBeauty.Application;
@@ -13,7 +14,10 @@ public static class DependencyInjection
         services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile).Assembly));
 
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
+        {
+            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        });
 
         services.AddValidatorsFromAssemblyContaining<MappingProfile>();
 
