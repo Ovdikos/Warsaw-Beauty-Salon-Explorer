@@ -86,3 +86,17 @@ To maintain a clean frontend architecture, React components are strictly separat
 * **Centralized Axios Configuration:** All HTTP communication routes through a customized Axios instance (`apiClient.ts`). This prevents repetitive URL hardcoding and centralizes header management.
 * **Global Interceptors & RFC 7807:** The Axios client includes a global response interceptor designed to catch `400 Bad Request` and `500 Internal Server Error` responses. It automatically parses the standardized `ProblemDetails` JSON returned by the .NET `GlobalExceptionHandler`. This ensures that raw backend errors are seamlessly transformed into user-friendly UI notifications without crashing the application.
 * **Domain-Specific Services:** React components never execute raw `axios.get()` or `fetch()` calls. Instead, they interact with a dedicated `salonService`. This service exposes semantic, strongly-typed methods (e.g., `getSalons()`, `updateSalon()`), adhering to the Single Responsibility Principle (SRP) and making the UI components incredibly clean and easy to test.
+
+### Phase 3: Main Page & UX Orchestration
+The main page was designed to prioritize performance and accessibility, addressing common pitfalls in data-heavy web applications.
+
+* **Smart Filtering:** To mitigate issues with localized keyboard layouts (e.g., Polish diacritics), I replaced text-based search with a dynamic, multi-select 'pill' filtering system. This improves UX by providing clear, predefined options that don't depend on exact user input.
+* **Optimized Rendering:** To handle large datasets efficiently, I implemented client-side pagination (6 items per page) within a flex-grow container. This ensures a consistent viewport height, keeping pagination controls anchored at the bottom for an app-like experience without intrusive scrolling.
+* **High-End Design System:** The UI follows a 'Bento Box' architecture using deep zinc tones and subtle fuchsia/rose accents. This editorial aesthetic focuses on clean visual hierarchy and uses thin borders with glassmorphism effects to create a premium, boutique feel.
+
+### Phase 4: Salon Details & Symmetric Interface
+The details page was architected to solve the problem of long, SEO-stuffed content while maintaining a balanced interface.
+
+* **Symmetrical Bento Layout:** The page uses a 50/50 split-screen grid. The left side serves as an 'Info Dashboard' (sticky on scroll), while the right side acts as a scrollable container for the services menu. This maintains perfect visual balance regardless of the content length.
+* **Long-Form Data Management:** To handle service lists of unpredictable length, I implemented an internal scrollable container with a custom, minimalist scrollbar. This keeps the overall page layout rigid and professional, avoiding the layout shifts associated with expanding lists.
+* **Adaptive Typography:** Instead of destructive truncation, I utilized fluid layout wrapping with intelligent spacing (`mt-auto` and `flex-col` flows). This ensures that long salon names wrap naturally while keeping the functional elements (buttons, contact info) perfectly aligned at the base of the Bento cards.
