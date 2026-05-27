@@ -1,4 +1,4 @@
-import { MapPin, Star, Tag } from 'lucide-react';
+import { MapPin, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { SalonListDto } from '../types';
 
@@ -10,38 +10,40 @@ export default function SalonCard({ salon }: SalonCardProps) {
   return (
     <Link
       to={`/salons/${salon.id}`}
-      className="group block rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-violet-900/30"
+      className="group relative flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm transition-all duration-300 hover:border-rose-500/50 hover:shadow-[0_0_24px_rgba(225,29,72,0.12)]"
     >
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <h3 className="text-base font-semibold leading-snug text-white group-hover:text-violet-300 transition-colors duration-200">
-          {salon.name}
-        </h3>
-        {salon.priceRange && (
-          <span className="shrink-0 rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-medium text-violet-300 flex items-center gap-1">
-            <Tag size={11} />
-            {salon.priceRange}
-          </span>
-        )}
+
+      {salon.priceRange && (
+        <span className="absolute right-4 top-4 rounded-full bg-zinc-800 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-zinc-400">
+          {salon.priceRange}
+        </span>
+      )}
+
+
+      <h3 className="mb-3 pr-12 text-[15px] font-semibold leading-snug text-white transition-colors duration-200 group-hover:text-rose-300">
+        {salon.name}
+      </h3>
+
+
+      <div className="mb-auto flex items-center gap-1.5 text-xs text-zinc-500">
+        <MapPin size={11} className="shrink-0 text-rose-500/70" />
+        {salon.district}
       </div>
 
-      <div className="flex items-center gap-1.5 text-sm text-zinc-400 mb-4">
-        <MapPin size={13} className="shrink-0 text-violet-400" />
-        <span>{salon.district}</span>
-      </div>
 
-      <div className="flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between border-t border-zinc-800 pt-3">
         {salon.rating !== null ? (
           <div className="flex items-center gap-1.5">
-            <Star size={14} className="fill-amber-400 text-amber-400" />
-            <span className="text-sm font-medium text-amber-300">
+            <Star size={13} className="fill-rose-400 text-rose-400" />
+            <span className="text-sm font-medium text-zinc-200">
               {salon.rating.toFixed(1)}
             </span>
           </div>
         ) : (
-          <span className="text-xs text-zinc-600">No rating</span>
+          <span className="text-xs text-zinc-700">—</span>
         )}
-        <span className="text-xs text-zinc-500 group-hover:text-violet-400 transition-colors duration-200">
-          View details →
+        <span className="text-[11px] tracking-wide text-zinc-600 transition-colors duration-200 group-hover:text-rose-400">
+          View →
         </span>
       </div>
     </Link>
