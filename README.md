@@ -35,24 +35,18 @@ cd warsaw-beauty-salon-explorer
 git clone https://github.com/Ovdikos/Warsaw-Beauty-Salon-Explorer .
 ```
 
-#### Step 3: Spin Up the Backend API
-Navigate to the API project directory and run the .NET application. The backend will automatically bind to the SQLite database file located in the data/ folder and establish local endpoints.
+#### Step 3: Spin Up the Stack
+Build and start the backend API and frontend Nginx server in detached mode using Docker Compose:
 
 ```bash
-cd backend/WarsawBeauty.API
-dotnet run
+docker compose up -d --build
 ```
 
-#### Step 4: Spin Up the Frontend Development Server
-Open a new terminal window, navigate to the frontend directory, install dependencies, and start the Vite development server
+*Note: To shutdown the up use:*
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose down
 ```
-
-Once started, open your browser and go to the local address displayed in your terminal (http://localhost:5173) to experience the fully functional system with write capabilities.
 
 ---
 
