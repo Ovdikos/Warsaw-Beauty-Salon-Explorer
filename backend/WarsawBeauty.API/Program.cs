@@ -31,11 +31,15 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("AllowFrontend");
 app.UseAuthorization();
 app.MapControllers();
 
+
+app.MapFallbackToFile("index.html");
 app.Run();
