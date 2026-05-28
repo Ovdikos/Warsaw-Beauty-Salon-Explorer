@@ -16,7 +16,7 @@ If you want to immediately explore the user interface and interact with the appl
 *Note: Since the university user hosting platform is optimized for static file delivery, backend write operations (such as saving changes in the salon edit mode) are seamlessly simulated client-side with realistic network delays and notifications in this live preview.*
 
 ### Option B: Local Full-Stack Deployment (From Source)
-To run the full live system with the active .NET 8 backend API and persistent SQLite database, follow these steps:
+To run the full live system with the active .NET 10 backend API and persistent SQLite database, follow these steps:
 
 #### Prerequisites
 * **.NET 10.0 SDK** installed on your machine.
@@ -77,5 +77,3 @@ If given more time to evolve this prototype into a production-grade SaaS product
 * **Business Authorization & Profile "Claiming" (Security):** Currently, API endpoints are open to facilitate easy local testing. For production, I would implement JWT-based authentication with RBAC. Specifically, I would introduce a "Claim your business" flow (similar to Google My Business), ensuring that only verified salon owners can modify their services and pricing.
 
 * **Scaling Data Collection (Data Engineering):** While the current Playwright scraper works flawlessly for a local Warsaw dataset, scaling it to index 10,000+ salons across Poland requires a stronger setup. I would add proxies to prevent the scraper from being blocked by websites. I would also schedule automatic weekly updates so that salon prices and data are always kept fresh and accurate.
-
-* **Comprehensive QA & Containerization (DevOps):** Introduce robust automated testing by covering the .NET API with unit/integration tests using xUnit and Moq, and the React frontend with End-to-End UI tests. Additionally, I would fully containerize the application using Docker Compose (DB + API + UI) and configure a CI/CD pipeline via GitHub Actions for seamless deployment.
