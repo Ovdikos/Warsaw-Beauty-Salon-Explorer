@@ -18,7 +18,7 @@ public class SalonsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<SalonDetailDto>>> GetSalons([FromQuery] string? district)
+    public async Task<ActionResult<IEnumerable<SalonListDto>>> GetSalons([FromQuery] string? district)
     {
         var result = await _mediator.Send(new GetSalonsQuery(district));
         return Ok(result);

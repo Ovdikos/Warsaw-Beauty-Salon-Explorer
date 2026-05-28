@@ -5,7 +5,7 @@ using WarsawBeauty.Core.Interfaces;
 
 namespace WarsawBeauty.Application.Features.Salons.Queries;
 
-public class GetSalonsQueryHandler : IRequestHandler<GetSalonsQuery, IEnumerable<SalonDetailDto>>
+public class GetSalonsQueryHandler : IRequestHandler<GetSalonsQuery, IEnumerable<SalonListDto>>
 {
     private readonly ISalonRepository _repository;
     private readonly IMapper _mapper;
@@ -16,9 +16,9 @@ public class GetSalonsQueryHandler : IRequestHandler<GetSalonsQuery, IEnumerable
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<SalonDetailDto>> Handle(GetSalonsQuery request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<SalonListDto>> Handle(GetSalonsQuery request, CancellationToken cancellationToken)
     {
         var salons = await _repository.GetSalonsAsync(request.District);
-        return _mapper.Map<IEnumerable<SalonDetailDto>>(salons);
+        return _mapper.Map<IEnumerable<SalonListDto>>(salons);
     }
 }

@@ -17,7 +17,7 @@ public class SalonRepository : ISalonRepository
 
     public async Task<IEnumerable<Salon>> GetSalonsAsync(string? district)
     {
-        var query = _context.Salons.Include(s => s.Services).AsQueryable();
+        var query = _context.Salons.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(district))
         {
