@@ -5,9 +5,7 @@ using WarsawBeauty.Infrastructure.DbContexts;
 
 namespace WarsawBeauty.Infrastructure.Repositories;
 
-/// <summary>
-/// Concrete EF Core implementation of ISalonRepository.
-/// </summary>
+
 public class SalonRepository : ISalonRepository
 {
     private readonly AppDbContext _context;
@@ -31,7 +29,6 @@ public class SalonRepository : ISalonRepository
 
     public async Task<Salon?> GetSalonByIdAsync(int id)
     {
-        // Eager load Services to avoid N+1 queries on the detail endpoint
         return await _context.Salons
             .Include(s => s.Services)
             .FirstOrDefaultAsync(s => s.Id == id);
