@@ -10,7 +10,7 @@ The application is built as a modular monolith, separated into distinct componen
   * *Why:* Booksy is a heavily dynamic Single Page Application (SPA). Instead of trying to reverse-engineer undocumented and heavily protected private APIs, I chose Playwright to render the page and extract the embedded `application/ld+json` schema. Python's robust scraping ecosystem made this rapid to develop.
 * **Database:** SQLite
   * *Why:* While MS SQL Server is my go-to for larger enterprise applications, the assignment highly values the ability for reviewers to run the project from scratch. SQLite eliminates the need to configure Docker containers or local database servers. It "just works" out of the box using a shared `.db` file between the Python scraper and the .NET backend.
-* **Backend API:** .NET 8 (C#) & Entity Framework Core
+* **Backend API:** .NET 10 (C#) & Entity Framework Core
   * *Why:* C# and ASP.NET Core provide a robust, strictly typed environment. To demonstrate enterprise-readiness, the backend is structured using **Clean Architecture** principles, ensuring high testability and clear separation of concerns.
 * **Frontend UI:** React (TypeScript + Vite + TailwindCSS)
   * *Why:* React allows for building a simple, responsive, and component-driven UI quickly. TypeScript ensures that the data structures consumed from the .NET backend match the frontend expectations perfectly.
