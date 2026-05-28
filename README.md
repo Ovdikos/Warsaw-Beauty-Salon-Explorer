@@ -19,7 +19,7 @@ If you want to immediately explore the user interface and interact with the appl
 To run the full live system with the active .NET 8 backend API and persistent SQLite database, follow these steps:
 
 #### Prerequisites
-* **.NET 8.0 SDK** installed on your machine.
+* **.NET 10.0 SDK** installed on your machine.
 * **Node.js** (v18.0 or higher) and **npm**.
 * **Git** for repository cloning.
 
@@ -61,7 +61,7 @@ The application is built as a modular monolith with three completely decoupled l
 
 #### 1. Data Collection (Scraper): Python 3 + Playwright for asynchronous headless scraping and DOM state extraction, storing cleansed data in SQLite.
 
-#### 2. Backend API: C# / .NET 8 structured with Clean Architecture. It utilizes CQRS via MediatR, FluentValidation for fail-fast requests, global exception handling (RFC 7807), and Entity Framework Core.
+#### 2. Backend API: C# / .NET 10 structured with Clean Architecture. It utilizes CQRS via MediatR, FluentValidation for fail-fast requests, global exception handling (RFC 7807), and Entity Framework Core.
 
 #### 3. Frontend UI: React 19 + TypeScript + Vite, styled with Tailwind CSS v4. Features a responsive, symmetrical "Bento Box" design system and centralized domain services (Axios).
 
