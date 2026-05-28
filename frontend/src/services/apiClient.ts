@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5270/api',
+  baseURL: import.meta.env.PROD ? '/api' : 'http://localhost:5270/api',
   headers: {
     'Content-Type': 'application/json',
   },
