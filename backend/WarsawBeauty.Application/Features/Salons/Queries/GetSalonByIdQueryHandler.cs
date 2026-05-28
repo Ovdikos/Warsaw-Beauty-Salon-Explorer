@@ -1,7 +1,7 @@
 using AutoMapper;
 using MediatR;
 using WarsawBeauty.Application.DTOs;
-using WarsawBeauty.Core.Interfaces;
+using WarsawBeauty.Application.Interfaces;
 
 namespace WarsawBeauty.Application.Features.Salons.Queries;
 

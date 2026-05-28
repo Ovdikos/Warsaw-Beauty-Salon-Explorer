@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using WarsawBeauty.Core.Interfaces;
+using WarsawBeauty.Application.Interfaces;
 using WarsawBeauty.Infrastructure.DbContexts;
 using WarsawBeauty.Infrastructure.Repositories;
 

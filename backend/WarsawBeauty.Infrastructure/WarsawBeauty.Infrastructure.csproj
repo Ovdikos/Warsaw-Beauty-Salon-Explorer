@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\WarsawBeauty.Core\WarsawBeauty.Core.csproj" />
+    <ProjectReference Include="..\WarsawBeauty.Application\WarsawBeauty.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WarsawBeauty.Core.Entities;
-using WarsawBeauty.Core.Interfaces;
+using WarsawBeauty.Application.Interfaces;
 using WarsawBeauty.Infrastructure.DbContexts;
 
 namespace WarsawBeauty.Infrastructure.Repositories;

@@ -1,5 +1,5 @@
 using MediatR;
-using WarsawBeauty.Core.Interfaces;
+using WarsawBeauty.Application.Interfaces;
 
 namespace WarsawBeauty.Application.Features.Salons.Commands;
 
