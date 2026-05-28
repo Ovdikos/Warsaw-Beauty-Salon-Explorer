@@ -66,3 +66,16 @@ The application is built as a modular monolith with three completely decoupled l
 #### 3. Frontend UI: React 19 + TypeScript + Vite, styled with Tailwind CSS v4. Features a responsive, symmetrical "Bento Box" design system and centralized domain services (Axios).
 
 > 📖 **Deep-Dive Documentation:** This section is kept intentionally brief. For a detailed breakdown of architectural decisions, schema design, network optimizations, and the product trade-offs made during development, please refer to the **[Engineering_Notes.md](./Engineering_Notes.md)**.
+
+---
+
+## 3. What I'd Improve with More Time
+If given more time to evolve this prototype into a production-grade SaaS product, I would focus on the following product and engineering enhancements:
+
+* **Geospatial Search & Interactive Mapping (UX & Product):** Transition from a purely list-based explorer to a map-centric UI integrating Mapbox or Google Maps API. On the backend, I would migrate from SQLite to PostgreSQL with PostGIS to support advanced spatial queries ("find salons within a 3km radius").
+
+* **Business Authorization & Profile "Claiming" (Security):** Currently, API endpoints are open to facilitate easy local testing. For production, I would implement JWT-based authentication with RBAC. Specifically, I would introduce a "Claim your business" flow (similar to Google My Business), ensuring that only verified salon owners can modify their services and pricing.
+
+* **Scaling Data Collection (Data Engineering):** While the current Playwright scraper works flawlessly for a local Warsaw dataset, scaling it to index 10,000+ salons across Poland requires a stronger setup. I would add proxies to prevent the scraper from being blocked by websites. I would also schedule automatic weekly updates so that salon prices and data are always kept fresh and accurate.
+
+* **Comprehensive QA & Containerization (DevOps):** Introduce robust automated testing by covering the .NET API with unit/integration tests using xUnit and Moq, and the React frontend with End-to-End UI tests. Additionally, I would fully containerize the application using Docker Compose (DB + API + UI) and configure a CI/CD pipeline via GitHub Actions for seamless deployment.
