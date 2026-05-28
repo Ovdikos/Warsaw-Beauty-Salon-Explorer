@@ -1,7 +1,17 @@
 import axios, { AxiosError } from 'axios';
 
+// For local usage
+// const apiClient = axios.create({
+//   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5270/api',
+//   headers: {
+//     'Content-Type': 'application/json',
+//   },
+// });
+
+
+//For production
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5270/api',
+  baseURL: import.meta.env.PROD ? '/~s30920/api' : 'http://localhost:5270/api',
   headers: {
     'Content-Type': 'application/json',
   },

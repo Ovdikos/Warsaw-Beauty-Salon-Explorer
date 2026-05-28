@@ -17,15 +17,13 @@ public class SalonsController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Returns all salons, with an optional district filter.</summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<SalonListDto>>> GetSalons([FromQuery] string? district)
+    public async Task<ActionResult<IEnumerable<SalonDetailDto>>> GetSalons([FromQuery] string? district)
     {
         var result = await _mediator.Send(new GetSalonsQuery(district));
         return Ok(result);
     }
 
-    /// <summary>Returns the full profile of a single salon including its services.</summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<SalonDetailDto>> GetSalonById(int id)
     {
@@ -33,7 +31,6 @@ public class SalonsController : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
-    /// <summary>Updates the editable fields (Address and Website) of an existing salon.</summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateSalon(int id, [FromBody] SalonUpdateDto dto)
     {
