@@ -19,9 +19,7 @@ If you want to immediately explore the user interface and interact with the appl
 To run the full live system with the active .NET 10 backend API and persistent SQLite database, follow these steps:
 
 #### Prerequisites
-* **.NET 10.0 SDK** installed on your machine.
-* **Node.js** (v18.0 or higher) and **npm**.
-* **Git** for repository cloning.
+* **Docker** installed on your machine.
 
 #### Step 1: Create a folder
 ```bash
